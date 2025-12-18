@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.uax.comandero.ui.LoginFragment"
+        android:label="Login"
+        tools:layout="@layout/fragment_login">
+
+        <action
+            android:id="@+id/action_login_to_menu"
+            app:destination="@id/menuFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/menuFragment"
+        android:name="com.uax.comandero.ui.MenuFragment"
+        android:label="Menú"
+        tools:layout="@layout/fragment_menu" />
+
+    <fragment
+        android:id="@+id/comandaFragment"
+        android:name="com.uax.comandero.ui.ComandaFragment"
+        android:label="Comanda" />
+
+    <fragment
+        android:id="@+id/historialFragment"
+        android:name="com.uax.comandero.ui.HistorialFragment"
+        android:label="Historial" />
+
+    <fragment
+        android:id="@+id/cuentaFragment"
+        android:name="com.uax.comandero.ui.CuentaFragment"
+        android:label="Cuenta" />
+
+</navigation>

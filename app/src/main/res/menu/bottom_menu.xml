@@ -1,0 +1,6 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/menuFragment" android:title="Menú" android:icon="@android:drawable/ic_menu_search"/>
+    <item android:id="@+id/comandaFragment" android:title="Comanda" android:icon="@android:drawable/ic_menu_add"/>
+    <item android:id="@+id/historialFragment" android:title="Historial" android:icon="@android:drawable/ic_menu_recent_history"/>
+    <item android:id="@+id/cuentaFragment" android:title="Cuenta" android:icon="@android:drawable/ic_menu_my_calendar"/>
+</menu>
