@@ -7,14 +7,19 @@ import androidx.room.PrimaryKey;
 public class LineaComanda {
     @PrimaryKey(autoGenerate = true)
     public int id;
+
+    public int numeroMesa; // Nueva funcionalidad
     public String nombrePlato;
     public double precio;
-    public boolean esPagado; // false = En carrito (Mesa activa), true = Historial
-    public long fecha; // Timestamp
+    public String notas; // Nueva funcionalidad (ej: "Sin cebolla")
+    public boolean esPagado;
+    public long fecha;
 
-    public LineaComanda(String nombrePlato, double precio, boolean esPagado, long fecha) {
+    public LineaComanda(int numeroMesa, String nombrePlato, double precio, String notas, boolean esPagado, long fecha) {
+        this.numeroMesa = numeroMesa;
         this.nombrePlato = nombrePlato;
         this.precio = precio;
+        this.notas = notas;
         this.esPagado = esPagado;
         this.fecha = fecha;
     }

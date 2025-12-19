@@ -50,11 +50,20 @@ public class HistorialFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             LineaComanda item = lista.get(position);
-            holder.textTitulo.setText(item.nombrePlato + " (" + item.precio + "€)");
 
-            // Convertimos la fecha (timestamp long) a texto legible
-            CharSequence fechaTexto = DateFormat.format("dd/MM/yyyy HH:mm", item.fecha);
-            holder.textSubtitulo.setText("Vendido el: " + fechaTexto);
+            // Mostramos Mesa y Nombre del plato
+            holder.textTitulo.setText("Mesa " + item.numeroMesa + ": " + item.nombrePlato);
+
+            // Formateamos fecha y precio
+            CharSequence fechaTexto = android.text.format.DateFormat.format("dd/MM HH:mm", item.fecha);
+            String detalle = String.format("%.2f € - %s", item.precio, fechaTexto);
+
+            // Si tenía nota, la mostramos
+            if (item.notas != null && !item.notas.isEmpty()) {
+                detalle += " (" + item.notas + ")";
+            }
+
+            holder.textSubtitulo.setText(detalle);
         }
 
         @Override public int getItemCount() { return lista == null ? 0 : lista.size(); }

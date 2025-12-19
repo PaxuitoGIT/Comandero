@@ -25,11 +25,6 @@
         tools:layout="@layout/fragment_menu" />
 
     <fragment
-        android:id="@+id/comandaFragment"
-        android:name="com.uax.comandero.ui.ComandaFragment"
-        android:label="Comanda" />
-
-    <fragment
         android:id="@+id/historialFragment"
         android:name="com.uax.comandero.ui.HistorialFragment"
         android:label="Historial" />
@@ -38,5 +33,20 @@
         android:id="@+id/cuentaFragment"
         android:name="com.uax.comandero.ui.CuentaFragment"
         android:label="Cuenta" />
+
+    <fragment android:id="@+id/mesasFragment" android:name="com.uax.comandero.ui.MesasFragment" android:label="Mesas">
+        <action android:id="@+id/action_mesas_to_detalle" app:destination="@id/detalleMesaFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/detalleMesaFragment" android:name="com.uax.comandero.ui.DetalleMesaFragment" android:label="Mesa">
+        <argument android:name="numeroMesa" app:argType="integer" />
+        <action android:id="@+id/action_detalle_to_recibo" app:destination="@id/reciboFragment" />
+    </fragment>
+
+    <fragment android:id="@+id/reciboFragment" android:name="com.uax.comandero.ui.ReciboFragment" android:label="Recibo">
+        <argument android:name="numeroMesa" app:argType="integer" />
+        <action android:id="@+id/action_recibo_to_mesas" app:destination="@id/mesasFragment"
+            app:popUpTo="@id/mesasFragment" app:popUpToInclusive="true"/>
+    </fragment>
 
 </navigation>

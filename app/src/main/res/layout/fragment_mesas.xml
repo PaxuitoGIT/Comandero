@@ -8,30 +8,31 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:padding="16dp">
 
         <TextView
-            android:text="Gestión de Menú"
-            android:textSize="22sp"
+            android:text="Mesas Activas"
+            android:textSize="24sp"
             android:textStyle="bold"
-            android:padding="16dp"
-            android:layout_width="match_parent"
+            android:layout_marginBottom="16dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerMenu"
+            android:id="@+id/recyclerMesas"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAddPlato"
+        android:id="@+id/fabAddMesa"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="Añadir plato"
+        android:contentDescription="Abrir mesa"
         android:src="@android:drawable/ic_input_add"
-        app:backgroundTint="#6200EE"
+        app:backgroundTint="#009688"
         app:tint="#FFFFFF"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
