@@ -45,10 +45,10 @@ public class LoginFragment extends Fragment {
         // 3. Configurar el botón
         btnLogin.setOnClickListener(v -> loginUser(view));
 
-        // Opcional: Si el usuario ya estaba logueado, pasar directo (descomentar si se desea)
-        // if (mAuth.getCurrentUser() != null) {
-        //     Navigation.findNavController(view).navigate(R.id.action_login_to_menu);
-        // }
+        // Si el usuario ya estaba logueado, pasar directo (comentar si no se desea)
+        if (mAuth.getCurrentUser() != null) {
+             Navigation.findNavController(view).navigate(R.id.action_login_to_menu);
+         }
     }
 
     private void loginUser(View view) {

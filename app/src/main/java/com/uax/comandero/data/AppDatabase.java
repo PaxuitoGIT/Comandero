@@ -7,13 +7,11 @@ import androidx.room.RoomDatabase;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Database(entities = {Plato.class, LineaComanda.class}, version = 1, exportSchema = false)
+@Database(entities = {Plato.class, LineaComanda.class, Mesa.class}, version = 3, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract AppDao dao();
-
     private static volatile AppDatabase INSTANCE;
-    private static final int NUMBER_OF_THREADS = 4;
-    public static final ExecutorService databaseWriteExecutor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
+    public static final ExecutorService databaseWriteExecutor = Executors.newFixedThreadPool(4);
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
@@ -21,6 +19,8 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "comandero_db")
+                            // ESTA LÍNEA ES LA MAGIA QUE EVITA EL ERROR:
+                            .fallbackToDestructiveMigration()
                             .build();
                 }
             }

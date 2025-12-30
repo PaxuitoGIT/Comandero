@@ -13,9 +13,68 @@
 
         <action
             android:id="@+id/action_login_to_menu"
-            app:destination="@id/menuFragment"
+            app:destination="@id/mesasFragment"
             app:popUpTo="@id/loginFragment"
             app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/mesasFragment"
+        android:name="com.uax.comandero.ui.MesasFragment"
+        android:label="Mesas"
+        tools:layout="@layout/fragment_mesas">
+
+        <action
+            android:id="@+id/action_mesas_to_detalle"
+            app:destination="@id/detalleMesaFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/detalleMesaFragment"
+        android:name="com.uax.comandero.ui.DetalleMesaFragment"
+        android:label="Mesa"
+        tools:layout="@layout/fragment_detalle_mesa">
+
+        <argument
+            android:name="numeroMesa"
+            app:argType="integer" />
+
+        <action
+            android:id="@+id/action_detalle_to_recibo"
+            app:destination="@id/reciboFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/reciboFragment"
+        android:name="com.uax.comandero.ui.ReciboFragment"
+        android:label="Recibo"
+        tools:layout="@layout/fragment_recibo">
+
+        <argument
+            android:name="numeroMesa"
+            app:argType="integer" />
+
+        <argument
+            android:name="fechaTicket"
+            app:argType="long"
+            android:defaultValue="-1L" />
+
+        <action
+            android:id="@+id/action_recibo_to_mesas"
+            app:destination="@id/mesasFragment"
+            app:popUpTo="@id/mesasFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/historialFragment"
+        android:name="com.uax.comandero.ui.HistorialFragment"
+        android:label="Historial"
+        tools:layout="@layout/fragment_historial">
+
+        <action
+            android:id="@+id/action_historial_to_recibo"
+            app:destination="@id/reciboFragment" />
     </fragment>
 
     <fragment
@@ -25,28 +84,9 @@
         tools:layout="@layout/fragment_menu" />
 
     <fragment
-        android:id="@+id/historialFragment"
-        android:name="com.uax.comandero.ui.HistorialFragment"
-        android:label="Historial" />
-
-    <fragment
         android:id="@+id/cuentaFragment"
         android:name="com.uax.comandero.ui.CuentaFragment"
-        android:label="Cuenta" />
-
-    <fragment android:id="@+id/mesasFragment" android:name="com.uax.comandero.ui.MesasFragment" android:label="Mesas">
-        <action android:id="@+id/action_mesas_to_detalle" app:destination="@id/detalleMesaFragment" />
-    </fragment>
-
-    <fragment android:id="@+id/detalleMesaFragment" android:name="com.uax.comandero.ui.DetalleMesaFragment" android:label="Mesa">
-        <argument android:name="numeroMesa" app:argType="integer" />
-        <action android:id="@+id/action_detalle_to_recibo" app:destination="@id/reciboFragment" />
-    </fragment>
-
-    <fragment android:id="@+id/reciboFragment" android:name="com.uax.comandero.ui.ReciboFragment" android:label="Recibo">
-        <argument android:name="numeroMesa" app:argType="integer" />
-        <action android:id="@+id/action_recibo_to_mesas" app:destination="@id/mesasFragment"
-            app:popUpTo="@id/mesasFragment" app:popUpToInclusive="true"/>
-    </fragment>
+        android:label="Cuenta"
+        tools:layout="@layout/fragment_cuenta" />
 
 </navigation>
