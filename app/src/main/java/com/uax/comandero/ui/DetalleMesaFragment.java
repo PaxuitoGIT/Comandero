@@ -17,7 +17,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -26,15 +25,13 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.uax.comandero.R;
 import com.uax.comandero.data.AppDatabase;
-import com.uax.comandero.data.ItemAgrupado; // IMPORTAR
+import com.uax.comandero.data.ItemAgrupado;
 import com.uax.comandero.data.LineaComanda;
 import com.uax.comandero.data.Plato;
-import com.uax.comandero.utils.ComandaUtils; // IMPORTAR
+import com.uax.comandero.utils.ComandaUtils;
 import com.uax.comandero.utils.ImpresoraService;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,14 +43,9 @@ public class DetalleMesaFragment extends Fragment {
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
                 Boolean bluetoothConnectGranted = result.getOrDefault(Manifest.permission.BLUETOOTH_CONNECT, false);
                 if (bluetoothConnectGranted != null && bluetoothConnectGranted) mandarACocina();
-                else Toast.makeText(getContext(), "Permisos necesarios", Toast.LENGTH_SHORT).show();
             });
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) numeroMesa = getArguments().getInt("numeroMesa");
-    }
+    @Override public void onCreate(Bundle s) { super.onCreate(s); if (getArguments() != null) numeroMesa = getArguments().getInt("numeroMesa"); }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -66,37 +58,74 @@ public class DetalleMesaFragment extends Fragment {
         RecyclerView recycler = view.findViewById(R.id.recyclerDetalle);
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // --- OBSERVADOR MODIFICADO: USA ITEMAGRUPADO ---
         db.dao().getComandaMesa(numeroMesa).observe(getViewLifecycleOwner(), lineas -> {
-            // 1. Agrupamos las líneas antes de mostrarlas
             List<ItemAgrupado> listaAgrupada = ComandaUtils.agruparLineas(lineas);
-
-            // 2. Usamos el nuevo adaptador de items agrupados
             recycler.setAdapter(new ComandaAgrupadaAdapter(listaAgrupada, new OnAgrupadoAccion() {
-                @Override
-                public void onBorrarUno(ItemAgrupado item) {
-                    confirmarBorradoUno(item);
-                }
+                @Override public void onBorrarUno(ItemAgrupado item) { confirmarBorradoUno(item); }
+                @Override public void onEditar(ItemAgrupado item) { editarGrupo(item); } // NUEVO
             }));
         });
 
         view.findViewById(R.id.fabAddItem).setOnClickListener(v -> mostrarBuscador());
-
         view.findViewById(R.id.btnIrACaja).setOnClickListener(v -> {
             Bundle args = new Bundle();
             args.putInt("numeroMesa", numeroMesa);
             Navigation.findNavController(v).navigate(R.id.action_detalle_to_recibo, args);
         });
-
         view.findViewById(R.id.btnMandarCocina).setOnClickListener(v -> mandarACocina());
         view.findViewById(R.id.fabSimularCocina).setOnClickListener(v -> simularTicketCocina());
 
         return view;
     }
 
-    // ==========================================
-    // LOGICA COCINA (IMPRESIÓN REAL)
-    // ==========================================
+    private void editarGrupo(ItemAgrupado item) {
+        LinearLayout layout = new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 10);
+
+        final EditText inputPrecio = new EditText(getContext());
+        inputPrecio.setHint("Precio Unitario");
+        inputPrecio.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        inputPrecio.setText(String.valueOf(item.precioUnitario));
+        layout.addView(inputPrecio);
+
+        final EditText inputNota = new EditText(getContext());
+        inputNota.setHint("Nota (ej: Muy hecho)");
+        inputNota.setText(item.notas);
+        layout.addView(inputNota);
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Editar " + item.nombre)
+                .setMessage("Se actualizarán " + item.cantidad + " unidades.")
+                .setView(layout)
+                .setPositiveButton("Guardar", (d, w) -> {
+                    String precioStr = inputPrecio.getText().toString();
+                    String nuevaNota = inputNota.getText().toString();
+                    if (!precioStr.isEmpty()) {
+                        double nuevoPrecio = Double.parseDouble(precioStr);
+                        AppDatabase.databaseWriteExecutor.execute(() -> {
+                            // Actualizamos TODOS los items de este grupo
+                            db.dao().actualizarLineasEnMasa(item.idsOriginales, nuevoPrecio, nuevaNota);
+                        });
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void confirmarBorradoUno(ItemAgrupado item) {
+        int idABorrar = item.idsOriginales.get(item.idsOriginales.size() - 1);
+        new AlertDialog.Builder(getContext())
+                .setTitle("¿Restar 1 " + item.nombre + "?")
+                .setPositiveButton("Eliminar", (d, w) -> {
+                    AppDatabase.databaseWriteExecutor.execute(() -> {
+                        LineaComanda dummy = new LineaComanda(0, "", 0, "", false, 0, false, false);
+                        dummy.id = idABorrar;
+                        db.dao().borrarLinea(dummy);
+                    });
+                }).setNegativeButton("Cancelar", null).show();
+    }
+
     private void mandarACocina() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
@@ -104,28 +133,21 @@ public class DetalleMesaFragment extends Fragment {
                 return;
             }
         }
-
         AppDatabase.databaseWriteExecutor.execute(() -> {
             List<LineaComanda> pendientes = db.dao().getPendientesCocina(numeroMesa);
             if (pendientes.isEmpty()) {
                 getActivity().runOnUiThread(() -> Toast.makeText(getContext(), "Todo enviado", Toast.LENGTH_SHORT).show());
                 return;
             }
-
             ImpresoraService impresora = new ImpresoraService(getContext());
-            impresora.imprimirTicketCocina(numeroMesa, pendientes); // El servicio agrupará internamente
-
+            impresora.imprimirTicketCocina(numeroMesa, pendientes);
             List<Integer> ids = new ArrayList<>();
             for (LineaComanda l : pendientes) ids.add(l.id);
             db.dao().marcarComoEnviados(ids);
-
             getActivity().runOnUiThread(() -> Toast.makeText(getContext(), "Enviado a Cocina", Toast.LENGTH_SHORT).show());
         });
     }
 
-    // ==========================================
-    // SIMULACIÓN
-    // ==========================================
     private void simularTicketCocina() {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             List<LineaComanda> pendientes = db.dao().getPendientesCocina(numeroMesa);
@@ -151,13 +173,7 @@ public class DetalleMesaFragment extends Fragment {
         builder.setView(t).setPositiveButton("Cerrar", null).show();
     }
 
-    // ==========================================
-    // AÑADIR (SIN CHECKBOX, USA EL DEL PLATO)
-    // ==========================================
     private void mostrarBuscador() {
-        // ... (código del buscador igual que antes) ...
-        // Para resumir, asumo que usas el mismo diálogo de búsqueda
-        // Copia tu método mostrarBuscador aquí.
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         View view = getLayoutInflater().inflate(R.layout.dialog_buscador, null);
         EditText etBuscar = view.findViewById(R.id.etBuscador);
@@ -191,8 +207,6 @@ public class DetalleMesaFragment extends Fragment {
         inputNota.setHint("Notas (ej: Sin cebolla)");
         layout.addView(inputNota);
 
-        // ¡YA NO PREGUNTAMOS SI ES DE COCINA! LO COGEMOS DE "p.esCocina"
-
         new AlertDialog.Builder(getContext())
                 .setTitle(p.nombre)
                 .setView(layout)
@@ -202,60 +216,28 @@ public class DetalleMesaFragment extends Fragment {
                                 numeroMesa, p.nombre, p.precio,
                                 inputNota.getText().toString(), false,
                                 System.currentTimeMillis(),
-                                p.esCocina, // <--- AUTOMÁTICO DESDE MENU
+                                p.esCocina,
                                 false
                         ));
                     });
                 }).show();
     }
 
-    // ==========================================
-    // BORRAR UNO DEL STACK
-    // ==========================================
-    private void confirmarBorradoUno(ItemAgrupado item) {
-        // Borramos el último ID añadido de ese grupo
-        int idABorrar = item.idsOriginales.get(item.idsOriginales.size() - 1);
-
-        new AlertDialog.Builder(getContext())
-                .setTitle("¿Restar 1 " + item.nombre + "?")
-                .setPositiveButton("Eliminar", (d, w) -> {
-                    AppDatabase.databaseWriteExecutor.execute(() -> {
-                        // Necesitamos crear un objeto LineaComanda dummy con el ID para borrarlo
-                        // Ojo: Room necesita el objeto entero o una query @Query("DELETE FROM linea_comanda WHERE id = :id")
-                        // Para simplificar sin cambiar DAO, usaremos la función borrarLinea si tienes el objeto,
-                        // pero como no lo tengo a mano, lo ideal es añadir al DAO: void borrarPorId(int id).
-                        // ASUMIENDO QUE NO QUIERES TOCAR DAO MÁS VECES, haremos esto:
-                        // Recuperamos y borramos.
-                        LineaComanda dummy = new LineaComanda(0, "", 0, "", false, 0, false, false);
-                        dummy.id = idABorrar;
-                        db.dao().borrarLinea(dummy);
-                    });
-                }).setNegativeButton("Cancelar", null).show();
-    }
-
-    // ==========================================
-    // NUEVO ADAPTER AGRUPADO
-    // ==========================================
-    interface OnAgrupadoAccion { void onBorrarUno(ItemAgrupado item); }
+    interface OnAgrupadoAccion { void onBorrarUno(ItemAgrupado item); void onEditar(ItemAgrupado item); }
 
     class ComandaAgrupadaAdapter extends RecyclerView.Adapter<ComandaAgrupadaAdapter.VH> {
         List<ItemAgrupado> list; OnAgrupadoAccion listener;
         public ComandaAgrupadaAdapter(List<ItemAgrupado> l, OnAgrupadoAccion li){this.list=l;this.listener=li;}
 
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
-            // Reusamos el layout antiguo
             return new VH(LayoutInflater.from(p.getContext()).inflate(R.layout.item_linea_comanda, p, false));
         }
 
         @Override public void onBindViewHolder(@NonNull VH h, int pos) {
             ItemAgrupado item = list.get(pos);
-
-            // LÓGICA VISUAL STACK
             if(item.cantidad > 1) h.tvNombre.setText(item.cantidad + "x " + item.nombre);
             else h.tvNombre.setText(item.nombre);
-
             h.tvPrecio.setText(String.format("%.2f €", item.precioTotal));
-
             if(item.notas != null && !item.notas.isEmpty()) {
                 h.tvNota.setText(item.notas);
                 h.tvNota.setVisibility(View.VISIBLE);
@@ -263,8 +245,10 @@ public class DetalleMesaFragment extends Fragment {
 
             h.btnDelete.setOnClickListener(v -> listener.onBorrarUno(item));
 
-            // Ocultamos botones de editar/repetir para simplificar el stack
-            h.btnEdit.setVisibility(View.GONE);
+            // HABILITAMOS EL BOTÓN EDITAR
+            h.btnEdit.setVisibility(View.VISIBLE);
+            h.btnEdit.setOnClickListener(v -> listener.onEditar(item));
+
             h.btnPlus.setVisibility(View.GONE);
         }
         @Override public int getItemCount() { return list.size(); }
@@ -281,7 +265,6 @@ public class DetalleMesaFragment extends Fragment {
         }
     }
 
-    // Adapter Buscador (Igual que siempre)
     interface OnPlatoSel { void onSelect(Plato p); }
     class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.VH> {
         List<Plato> p; OnPlatoSel l;

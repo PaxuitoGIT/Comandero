@@ -48,7 +48,7 @@ public class ReciboFragment extends Fragment {
         RecyclerView recycler = view.findViewById(R.id.recyclerRecibo);
         TextView tvTotal = view.findViewById(R.id.tvTotalRecibo);
         Button btnConf = view.findViewById(R.id.btnConfirmarPago);
-        Button btnDesc = view.findViewById(R.id.btnDescuento); // NUEVO BOTÓN
+        Button btnDesc = view.findViewById(R.id.btnDescuento);
 
         View btnImprimir = view.findViewById(R.id.fabImprimir);
         View btnSimular = view.findViewById(R.id.fabSimular);
@@ -60,7 +60,7 @@ public class ReciboFragment extends Fragment {
         if (fechaTicket == -1) {
             datos = db.dao().getComandaMesa(numeroMesa);
             btnConf.setVisibility(View.VISIBLE);
-            btnDesc.setVisibility(View.VISIBLE); // Solo permitimos descuento antes de pagar
+            btnDesc.setVisibility(View.VISIBLE);
         } else {
             datos = db.dao().getReciboPasado(numeroMesa, fechaTicket);
             btnConf.setVisibility(View.GONE);
@@ -75,13 +75,13 @@ public class ReciboFragment extends Fragment {
 
         // --- LÓGICA DESCUENTO MANUAL ---
         btnDesc.setOnClickListener(v -> {
-            descuentoAplicado = !descuentoAplicado; // Alternar estado
+            descuentoAplicado = !descuentoAplicado;
             if(descuentoAplicado){
                 btnDesc.setText("Quitar Descuento");
-                btnDesc.setBackgroundColor(0xFFE91E63); // Rojo para indicar activo
+                btnDesc.setBackgroundColor(0xFFE91E63);
             } else {
                 btnDesc.setText("Aplicar Descuento 10%");
-                btnDesc.setBackgroundColor(0xFF2196F3); // Azul normal
+                btnDesc.setBackgroundColor(0xFF2196F3);
             }
             recalcularTotal(tvTotal);
         });
@@ -92,18 +92,21 @@ public class ReciboFragment extends Fragment {
                 db.dao().cobrarLineasMesa(numeroMesa, System.currentTimeMillis());
                 db.dao().cerrarEstadoMesa(numeroMesa);
                 getActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), "Cobrado: " + String.format("%.2f €", totalFinal), Toast.LENGTH_SHORT).show();
                     Navigation.findNavController(v).navigate(R.id.action_recibo_to_mesas);
                 });
             });
         });
 
-        // Imprimir Real
+        // --- CORRECCIÓN DEL ERROR ANR AQUÍ ---
         if (btnImprimir != null) {
             btnImprimir.setOnClickListener(v -> {
                 if (listaActual != null && !listaActual.isEmpty()) {
-                    ImpresoraService impresora = new ImpresoraService(getContext());
-                    // Pasamos el totalFinal que ya incluye el descuento si aplica
-                    impresora.imprimirTicket(numeroMesa, listaActual, totalFinal);
+                    // ENVOLVEMOS LA IMPRESIÓN EN UN HILO DE FONDO
+                    AppDatabase.databaseWriteExecutor.execute(() -> {
+                        ImpresoraService impresora = new ImpresoraService(getContext());
+                        impresora.imprimirTicket(numeroMesa, listaActual, totalFinal);
+                    });
                 }
             });
         }
@@ -123,7 +126,7 @@ public class ReciboFragment extends Fragment {
         }
 
         if (descuentoAplicado) {
-            totalFinal = subtotal * 0.90; // 10% descuento
+            totalFinal = subtotal * 0.90;
             tv.setText(String.format("%.2f € (DTO -10%%)", totalFinal));
         } else {
             totalFinal = subtotal;
@@ -132,8 +135,9 @@ public class ReciboFragment extends Fragment {
     }
 
     private void mostrarSimulacion() {
+        // La simulación solo genera texto, es rápida, no hace falta hilo secundario obligatorio,
+        // pero por consistencia con ImpresoraService, mejor la dejamos así o dentro de un execute si notaras lag.
         ImpresoraService servicio = new ImpresoraService(getContext());
-        // Usamos totalFinal para que en la simulación salga el precio con descuento
         String ticketRaw = servicio.getTicketBuilder(numeroMesa, listaActual, totalFinal);
 
         String textoVisual = ticketRaw
@@ -158,6 +162,7 @@ public class ReciboFragment extends Fragment {
         List<LineaComanda> l; ReciboAdapter(List<LineaComanda> l){this.l=l;}
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
             View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_linea_comanda, p, false);
+            // Ocultar botones de edición en el recibo final
             v.findViewById(R.id.btnItemEdit).setVisibility(View.GONE);
             v.findViewById(R.id.btnItemPlus).setVisibility(View.GONE);
             v.findViewById(R.id.btnItemDelete).setVisibility(View.GONE);
