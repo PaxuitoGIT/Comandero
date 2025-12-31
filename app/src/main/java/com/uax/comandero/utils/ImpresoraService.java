@@ -11,6 +11,7 @@ import androidx.core.app.ActivityCompat;
 import com.dantsu.escposprinter.EscPosPrinter;
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection;
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections;
+import com.uax.comandero.data.ItemAgrupado; // IMPORTAR
 import com.uax.comandero.data.LineaComanda;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,135 +19,108 @@ import java.util.List;
 import java.util.Locale;
 
 public class ImpresoraService {
-
     private Context context;
+    public ImpresoraService(Context context) { this.context = context; }
 
-    public ImpresoraService(Context context) {
-        this.context = context;
-    }
-
-    // --- SOLUCIÓN ERROR 1: Método seguro para Toasts desde cualquier hilo ---
-    // Esto evita el error: "Can't toast on a thread that has not called Looper.prepare()"
     private void showToast(String mensaje) {
-        new Handler(Looper.getMainLooper()).post(() ->
-                Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
-        );
+        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show());
     }
 
-    // --- SOLUCIÓN ERROR 2: Chequeo de permisos antes de tocar Bluetooth ---
-    // Esto evita el error: "SecurityException: Need BLUETOOTH_CONNECT"
     private boolean tienePermisos() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // En Android 12+ requerimos BLUETOOTH_CONNECT
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                showToast("Falta permiso de dispositivo cercano (CONNECT)");
-                return false;
-            }
-        } else {
-            // En Android 11- requerimos BLUETOOTH normal
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-                showToast("Falta permiso Bluetooth");
-                return false;
+                showToast("Falta permiso BLUETOOTH_CONNECT"); return false;
             }
         }
         return true;
     }
 
     // ==========================================
-    // TICKET COCINA (SIN PRECIOS)
+    // TICKET COCINA STACKEADO
     // ==========================================
-
-    public String getTicketCocinaBuilder(int mesa, List<LineaComanda> productos) {
+    public String getTicketCocinaBuilder(int mesa, List<LineaComanda> productosRaw) {
         StringBuilder recibo = new StringBuilder();
-
         recibo.append("[C]<b><font size='big'>ORDEN COCINA</font></b>\n");
         recibo.append("[C]--------------------------------\n");
         recibo.append("[L]<b>MESA: " + mesa + "</b>[R]" + getFechaHora() + "\n");
-        recibo.append("[C]--------------------------------\n");
-        recibo.append("[L]\n");
+        recibo.append("[C]--------------------------------\n[L]\n");
 
-        for (LineaComanda p : productos) {
-            // Plato en grande
-            recibo.append("[L]<b><font size='big'>- " + p.nombrePlato + "</font></b>\n");
-            // Nota destacada
-            if(p.notas != null && !p.notas.isEmpty()){
-                recibo.append("[L]  *** " + p.notas + " ***\n");
+        // AGRUPAR
+        List<ItemAgrupado> lista = ComandaUtils.agruparLineas(productosRaw);
+
+        for (ItemAgrupado item : lista) {
+            String textoItem;
+            if (item.cantidad > 1) textoItem = item.cantidad + "x " + item.nombre;
+            else textoItem = "- " + item.nombre;
+
+            recibo.append("[L]<b><font size='big'>" + textoItem + "</font></b>\n");
+
+            if(item.notas != null && !item.notas.isEmpty()){
+                recibo.append("[L]  *** " + item.notas + " ***\n");
             }
             recibo.append("[L]\n");
         }
-
         recibo.append("[L]\n[L]\n[L]\n");
         return recibo.toString();
     }
 
     public void imprimirTicketCocina(int mesa, List<LineaComanda> productos) {
-        // 1. Verificamos permisos antes de hacer NADA
         if (!tienePermisos()) return;
-
         try {
-            // 2. Buscamos impresora
             BluetoothConnection connection = BluetoothPrintersConnections.selectFirstPaired();
-            if (connection == null) {
-                showToast("No hay impresora conectada/emparejada");
-                return;
-            }
-
-            // 3. Imprimimos
+            if (connection == null) { showToast("Sin impresora"); return; }
             EscPosPrinter printer = new EscPosPrinter(connection, 203, 48f, 32);
-            String texto = getTicketCocinaBuilder(mesa, productos);
-            printer.printFormattedText(texto);
-
-            showToast("Enviado a Cocina...");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showToast("Error Impresora: " + e.getMessage());
-        }
+            printer.printFormattedText(getTicketCocinaBuilder(mesa, productos));
+            showToast("Enviado Cocina");
+        } catch (Exception e) { e.printStackTrace(); showToast("Error: " + e.getMessage()); }
     }
 
     // ==========================================
-    // TICKET RECIBO (CON PRECIOS)
+    // RECIBO CLIENTE STACKEADO
     // ==========================================
-
-    public String getTicketBuilder(int mesa, List<LineaComanda> productos, double total) {
+    public String getTicketBuilder(int mesa, List<LineaComanda> productosRaw, double total) {
         StringBuilder recibo = new StringBuilder();
-        recibo.append("[C]<b><font size='big'>RESTAURANTE UAX</font></b>\n");
-        recibo.append("[L]\n");
-        recibo.append("[L]<b>Mesa: " + mesa + "</b>[R]" + getFechaHora() + "\n");
+        recibo.append("[C]<b><font size='big'>RESTAURANTE PACO</font></b>\n");
+        recibo.append("[C]Calle Paco, 57\n");
+        recibo.append("[C]Madrid, España\n");
+        recibo.append("[L]\n[L]<b>Mesa: " + mesa + "</b>[R]" + getFechaHora() + "\n");
         recibo.append("[C]--------------------------------\n");
 
-        for (LineaComanda p : productos) {
-            recibo.append("[L]" + p.nombrePlato + "[R]" + String.format("%.2f €", p.precio) + "\n");
-            if(p.notas != null && !p.notas.isEmpty()){
-                recibo.append("[L]<font size='small'>  (" + p.notas + ")</font>\n");
+        // AGRUPAR
+        List<ItemAgrupado> lista = ComandaUtils.agruparLineas(productosRaw);
+
+        for (ItemAgrupado item : lista) {
+            if (item.cantidad > 1) {
+                // FORMATO: 3x Cerveza (2.00) ..... 6.00 €
+                String izq = item.cantidad + "x " + item.nombre + " (" + String.format("%.2f", item.precioUnitario) + ")";
+                recibo.append("[L]" + izq + "[R]" + String.format("%.2f €", item.precioTotal) + "\n");
+            } else {
+                recibo.append("[L]" + item.nombre + "[R]" + String.format("%.2f €", item.precioTotal) + "\n");
+            }
+
+            if(item.notas != null && !item.notas.isEmpty()){
+                recibo.append("[L]<font size='small'>  (" + item.notas + ")</font>\n");
             }
         }
 
         recibo.append("[C]--------------------------------\n");
         recibo.append("[L]<b>TOTAL:</b>[R]<b><font size='big'>" + String.format("%.2f €", total) + "</font></b>\n");
-        recibo.append("[L]\n[L]\n[L]\n");
-
+        recibo.append("[L]\n");
+        recibo.append("[C]¡Gracias por su visita!\n");
+        recibo.append("[C]<font size='small'>IVA incluido</font>\n");
+        recibo.append("[L]\n[L]\n");
         return recibo.toString();
     }
 
     public void imprimirTicket(int mesa, List<LineaComanda> productos, double total) {
         if (!tienePermisos()) return;
-
         try {
             BluetoothConnection connection = BluetoothPrintersConnections.selectFirstPaired();
-            if (connection == null) {
-                showToast("No hay impresora conectada");
-                return;
-            }
+            if (connection == null) { showToast("Sin impresora"); return; }
             EscPosPrinter printer = new EscPosPrinter(connection, 203, 48f, 32);
-            String texto = getTicketBuilder(mesa, productos, total);
-            printer.printFormattedText(texto);
-            showToast("Imprimiendo Recibo...");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showToast("Error: " + e.getMessage());
-        }
+            printer.printFormattedText(getTicketBuilder(mesa, productos, total));
+            showToast("Imprimiendo Recibo");
+        } catch (Exception e) { e.printStackTrace(); showToast("Error: " + e.getMessage()); }
     }
 
     private String getFechaHora() {

@@ -14,14 +14,15 @@
         android:layout_height="wrap_content"/>
 
     <EditText
-        android:id="@+id/etIdPlato"
-        android:hint="Código ID (ej: B01)"
+        android:id="@+id/etCodigoPlato"
+        android:hint="Código (ej: 101)"
+        android:inputType="number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
     <EditText
         android:id="@+id/etNombrePlato"
-        android:hint="Nombre Producto"
+        android:hint="Nombre Plato"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
@@ -29,6 +30,13 @@
         android:id="@+id/etPrecioPlato"
         android:hint="Precio (€)"
         android:inputType="numberDecimal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <CheckBox
+        android:id="@+id/chkEsCocina"
+        android:text="Enviar a Cocina"
+        android:layout_marginTop="10dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
