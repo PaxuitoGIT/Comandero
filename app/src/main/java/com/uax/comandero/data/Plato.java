@@ -11,12 +11,14 @@ public class Plato {
     public String codigo;
     public String nombre;
     public double precio;
-    public boolean esCocina; // NUEVO: Define si este plato requiere preparación
+    public boolean esCocina;
+    public String categoria;
 
-    public Plato(String codigo, String nombre, double precio, boolean esCocina) {
+    public Plato(String codigo, String nombre, double precio, boolean esCocina, String categoria) {
         this.codigo = codigo;
         this.nombre = nombre;
         this.precio = precio;
         this.esCocina = esCocina;
+        this.categoria = categoria;
     }
 }

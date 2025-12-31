@@ -1,82 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="16dp">
 
     <TextView
-        android:text="RECIBO DE VENTA"
-        android:textSize="20sp"
+        android:id="@+id/tvTituloRecibo"
+        android:text="Cuenta Final"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:gravity="center"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerRecibo"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintTop_toBottomOf="@id/tvTituloRecibo"
+        app:layout_constraintBottom_toTopOf="@id/layoutTotales"/>
+
+    <LinearLayout
+        android:id="@+id/layoutTotales"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/btnDescuento"
+            android:text="Aplicar Descuento 10%"
+            android:backgroundTint="#2196F3"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:text="TOTAL A PAGAR:"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/tvTotalRecibo"
+                android:text="0.00 €"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#4CAF50"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnConfirmarPago"
+            android:text="Cobrar y Cerrar Mesa"
+            android:backgroundTint="#4CAF50"
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"/>
+    </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabImprimir"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginBottom="176dp"
         android:src="@android:drawable/ic_menu_share"
         app:backgroundTint="#000000"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         app:tint="#FFFFFF" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabSimular"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="12dp"
         android:src="@android:drawable/ic_menu_view"
         app:backgroundTint="#2196F3"
         app:layout_constraintBottom_toTopOf="@+id/fabImprimir"
         app:layout_constraintEnd_toEndOf="@+id/fabImprimir"
         app:tint="#FFFFFF" />
 
-    <View
-        android:background="#000000"
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:layout_marginVertical="16dp"/>
-
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <TextView
-            android:text="TOTAL:"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"/>
-        <TextView
-            android:id="@+id/tvTotalRecibo"
-            android:text="0.00 €"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/btnConfirmarPago"
-        android:text="CONFIRMAR COBRO"
-        android:backgroundTint="#000000"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:layout_marginTop="24dp"
-        android:padding="16dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

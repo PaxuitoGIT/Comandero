@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Database(entities = {Plato.class, LineaComanda.class, Mesa.class}, version = 5, exportSchema = false)
+@Database(entities = {Plato.class, LineaComanda.class, Mesa.class}, version = 6, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract AppDao dao();
     private static volatile AppDatabase INSTANCE;

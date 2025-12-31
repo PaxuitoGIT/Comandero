@@ -24,10 +24,12 @@ import java.util.List;
 
 public class ReciboFragment extends Fragment {
     private int numeroMesa;
-    private long fechaTicket = -1; // -1 significa "Mesa Actual", otro valor es "Historial"
-
-    // Variable para guardar los datos cargados y poder imprimirlos/simularlos
+    private long fechaTicket = -1;
     private List<LineaComanda> listaActual;
+
+    // VARIABLES PARA DESCUENTO
+    private boolean descuentoAplicado = false;
+    private double totalFinal = 0.0;
 
     @Override
     public void onCreate(Bundle s) {
@@ -46,156 +48,128 @@ public class ReciboFragment extends Fragment {
         RecyclerView recycler = view.findViewById(R.id.recyclerRecibo);
         TextView tvTotal = view.findViewById(R.id.tvTotalRecibo);
         Button btnConf = view.findViewById(R.id.btnConfirmarPago);
+        Button btnDesc = view.findViewById(R.id.btnDescuento); // NUEVO BOTÓN
 
-        // Referencias a los botones flotantes
         View btnImprimir = view.findViewById(R.id.fabImprimir);
-        View btnSimular = view.findViewById(R.id.fabSimular); // El botón del "Ojo"
+        View btnSimular = view.findViewById(R.id.fabSimular);
 
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // 1. DECIDIMOS QUÉ DATOS CARGAR
+        // Cargar datos
         LiveData<List<LineaComanda>> datos;
-
         if (fechaTicket == -1) {
-            // MODO COBRO (Mesa activa)
             datos = db.dao().getComandaMesa(numeroMesa);
             btnConf.setVisibility(View.VISIBLE);
+            btnDesc.setVisibility(View.VISIBLE); // Solo permitimos descuento antes de pagar
         } else {
-            // MODO HISTORIAL (Solo lectura)
             datos = db.dao().getReciboPasado(numeroMesa, fechaTicket);
             btnConf.setVisibility(View.GONE);
+            btnDesc.setVisibility(View.GONE);
         }
 
-        // 2. OBSERVAMOS DATOS Y ACTUALIZAMOS UI
         datos.observe(getViewLifecycleOwner(), lineas -> {
-            this.listaActual = lineas; // Guardamos la lista
-
+            this.listaActual = lineas;
             recycler.setAdapter(new ReciboAdapter(lineas));
-
-            double total = 0;
-            if (lineas != null) {
-                for (LineaComanda l : lineas) total += l.precio;
-            }
-            tvTotal.setText(String.format("%.2f €", total));
+            recalcularTotal(tvTotal);
         });
 
-        // 3. LÓGICA DEL BOTÓN DE COBRO (Cerrar mesa)
+        // --- LÓGICA DESCUENTO MANUAL ---
+        btnDesc.setOnClickListener(v -> {
+            descuentoAplicado = !descuentoAplicado; // Alternar estado
+            if(descuentoAplicado){
+                btnDesc.setText("Quitar Descuento");
+                btnDesc.setBackgroundColor(0xFFE91E63); // Rojo para indicar activo
+            } else {
+                btnDesc.setText("Aplicar Descuento 10%");
+                btnDesc.setBackgroundColor(0xFF2196F3); // Azul normal
+            }
+            recalcularTotal(tvTotal);
+        });
+
+        // Cobrar
         btnConf.setOnClickListener(v -> {
             AppDatabase.databaseWriteExecutor.execute(() -> {
                 db.dao().cobrarLineasMesa(numeroMesa, System.currentTimeMillis());
                 db.dao().cerrarEstadoMesa(numeroMesa);
-
                 getActivity().runOnUiThread(() -> {
-                    Toast.makeText(getContext(), "Cobrado y Guardado", Toast.LENGTH_SHORT).show();
                     Navigation.findNavController(v).navigate(R.id.action_recibo_to_mesas);
                 });
             });
         });
 
-        // 4. LÓGICA DE IMPRESIÓN REAL (Bluetooth)
+        // Imprimir Real
         if (btnImprimir != null) {
             btnImprimir.setOnClickListener(v -> {
                 if (listaActual != null && !listaActual.isEmpty()) {
-                    double total = calcularTotal(listaActual);
                     ImpresoraService impresora = new ImpresoraService(getContext());
-                    impresora.imprimirTicket(numeroMesa, listaActual, total);
-                } else {
-                    Toast.makeText(getContext(), "No hay datos", Toast.LENGTH_SHORT).show();
+                    // Pasamos el totalFinal que ya incluye el descuento si aplica
+                    impresora.imprimirTicket(numeroMesa, listaActual, totalFinal);
                 }
             });
         }
 
-        // 5. LÓGICA DE SIMULACIÓN (Vista Previa en Pantalla)
+        // Simular
         if (btnSimular != null) {
-            btnSimular.setOnClickListener(v -> {
-                if (listaActual != null && !listaActual.isEmpty()) {
-                    mostrarSimulacion();
-                } else {
-                    Toast.makeText(getContext(), "No hay datos", Toast.LENGTH_SHORT).show();
-                }
-            });
+            btnSimular.setOnClickListener(v -> mostrarSimulacion());
         }
 
         return view;
     }
 
-    // Método auxiliar para calcular total
-    private double calcularTotal(List<LineaComanda> lista) {
-        double t = 0;
-        for (LineaComanda l : lista) t += l.precio;
-        return t;
+    private void recalcularTotal(TextView tv) {
+        double subtotal = 0;
+        if (listaActual != null) {
+            for (LineaComanda l : listaActual) subtotal += l.precio;
+        }
+
+        if (descuentoAplicado) {
+            totalFinal = subtotal * 0.90; // 10% descuento
+            tv.setText(String.format("%.2f € (DTO -10%%)", totalFinal));
+        } else {
+            totalFinal = subtotal;
+            tv.setText(String.format("%.2f €", totalFinal));
+        }
     }
 
-    // Método para mostrar el AlertDialog simulando el ticket
     private void mostrarSimulacion() {
-        double total = calcularTotal(listaActual);
         ImpresoraService servicio = new ImpresoraService(getContext());
+        // Usamos totalFinal para que en la simulación salga el precio con descuento
+        String ticketRaw = servicio.getTicketBuilder(numeroMesa, listaActual, totalFinal);
 
-        // Obtenemos el texto crudo del generador
-        String ticketRaw = servicio.getTicketBuilder(numeroMesa, listaActual, total);
-
-        // Limpiamos los códigos de impresora para que se vea bien en el móvil
         String textoVisual = ticketRaw
                 .replace("[C]", "")
                 .replace("[L]", "")
                 .replace("[R]", "   ")
                 .replace("<font size='big'>", "")
                 .replace("</font>", "")
-                .replace("<font size='small'>", "")
-                .replace("\n", "<br>"); // Saltos de línea HTML
+                .replace("\n", "<br>");
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("Vista Previa Ticket");
-
-        TextView textoView = new TextView(getContext());
-        // Usamos fromHtml para que entienda las negritas <b>
-        textoView.setText(Html.fromHtml(textoVisual, Html.FROM_HTML_MODE_COMPACT));
-        textoView.setPadding(50, 40, 50, 40);
-        // Fuente Monospace para simular impresora térmica
-        textoView.setTypeface(Typeface.MONOSPACE);
-        textoView.setTextSize(14);
-        textoView.setBackgroundColor(0xFFFFFDE7); // Fondo amarillento
-        textoView.setTextColor(0xFF000000); // Texto negro
-
-        builder.setView(textoView);
-        builder.setPositiveButton("Cerrar", null);
-        builder.show();
+        TextView t = new TextView(getContext());
+        t.setText(Html.fromHtml(textoVisual, Html.FROM_HTML_MODE_COMPACT));
+        t.setPadding(50, 40, 50, 40);
+        t.setTypeface(Typeface.MONOSPACE);
+        t.setBackgroundColor(0xFFFFFDE7);
+        t.setTextColor(0xFF000000);
+        builder.setView(t).setPositiveButton("Cerrar", null).show();
     }
 
-    // ADAPTER
     class ReciboAdapter extends RecyclerView.Adapter<ReciboAdapter.VH> {
-        List<LineaComanda> l;
-        public ReciboAdapter(List<LineaComanda> l){this.l=l;}
-
+        List<LineaComanda> l; ReciboAdapter(List<LineaComanda> l){this.l=l;}
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int t) {
             View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_linea_comanda, p, false);
-            // Ocultar botones de edición
-            View btnEdit = v.findViewById(R.id.btnItemEdit);
-            View btnPlus = v.findViewById(R.id.btnItemPlus);
-            View btnDelete = v.findViewById(R.id.btnItemDelete);
-            if(btnEdit != null) btnEdit.setVisibility(View.GONE);
-            if(btnPlus != null) btnPlus.setVisibility(View.GONE);
-            if(btnDelete != null) btnDelete.setVisibility(View.GONE);
+            v.findViewById(R.id.btnItemEdit).setVisibility(View.GONE);
+            v.findViewById(R.id.btnItemPlus).setVisibility(View.GONE);
+            v.findViewById(R.id.btnItemDelete).setVisibility(View.GONE);
             return new VH(v);
         }
-
         @Override public void onBindViewHolder(@NonNull VH h, int pos) {
             LineaComanda i = l.get(pos);
             TextView t1 = h.itemView.findViewById(R.id.tvNombreLinea);
             TextView t2 = h.itemView.findViewById(R.id.tvPrecioLinea);
-            TextView tNota = h.itemView.findViewById(R.id.tvNotaLinea);
-
             t1.setText(i.nombrePlato);
             t2.setText(i.precio + " €");
-
-            if (i.notas != null && !i.notas.isEmpty()) {
-                tNota.setText(i.notas);
-                tNota.setVisibility(View.VISIBLE);
-            } else {
-                tNota.setVisibility(View.GONE);
-            }
         }
-
         @Override public int getItemCount() { return l==null?0:l.size(); }
         class VH extends RecyclerView.ViewHolder{VH(View v){super(v);}}
     }
