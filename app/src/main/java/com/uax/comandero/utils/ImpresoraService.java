@@ -11,7 +11,7 @@ import androidx.core.app.ActivityCompat;
 import com.dantsu.escposprinter.EscPosPrinter;
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection;
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections;
-import com.uax.comandero.data.ItemAgrupado; // IMPORTAR
+import com.uax.comandero.data.ItemAgrupado;
 import com.uax.comandero.data.LineaComanda;
 import java.text.SimpleDateFormat;
 import java.util.Date;

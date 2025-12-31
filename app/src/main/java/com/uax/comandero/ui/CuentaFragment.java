@@ -35,7 +35,6 @@ public class CuentaFragment extends Fragment {
             FirebaseAuth.getInstance().signOut();
             // Navegar de vuelta al Login y limpiar la pila de navegación para no volver atrás con el botón 'Back'
             Navigation.findNavController(view).navigate(R.id.loginFragment);
-            // Nota: Lo ideal es usar 'popUpTo' en el nav_graph, pero esto funciona para la POC.
         });
 
         return view;

@@ -71,8 +71,6 @@ public class LoginFragment extends Fragment {
                     if (task.isSuccessful()) {
                         // Login correcto: Ejecutar la navegación
                         Toast.makeText(getContext(), "Bienvenido", Toast.LENGTH_SHORT).show();
-
-                        // AQUÍ ESTÁ LA ACCIÓN QUE PEDISTE
                         Navigation.findNavController(view).navigate(R.id.action_login_to_menu);
 
                     } else {

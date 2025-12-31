@@ -106,7 +106,7 @@ public class HistorialFragment extends Fragment {
         });
     }
 
-    // --- ADAPTER (Igual que antes) ---
+    // --- ADAPTER ---
     class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.ViewHolder> {
         List<Ticket> lista;
         public TicketAdapter(List<Ticket> l) { this.lista = l; }

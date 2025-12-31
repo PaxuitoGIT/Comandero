@@ -22,7 +22,6 @@ public interface AppDao {
     @Update
     void actualizarPlato(Plato plato);
 
-    // NUEVO: Permite eliminar un plato de la carta permanentemente
     @Delete
     void borrarPlato(Plato plato);
 
@@ -69,7 +68,7 @@ public interface AppDao {
     @Update
     void actualizarLinea(LineaComanda linea);
 
-    // NUEVO: Para editar precio o notas de varios productos iguales a la vez (Stacking)
+    // Para editar precio o notas de varios productos iguales a la vez (Stacking)
     @Query("UPDATE linea_comanda SET precio = :precio, notas = :notas WHERE id IN (:ids)")
     void actualizarLineasEnMasa(List<Integer> ids, double precio, String notas);
 
