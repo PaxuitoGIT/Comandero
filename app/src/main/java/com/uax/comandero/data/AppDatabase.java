@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Database(entities = {Plato.class, LineaComanda.class, Mesa.class}, version = 3, exportSchema = false)
+@Database(entities = {Plato.class, LineaComanda.class, Mesa.class}, version = 4, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract AppDao dao();
     private static volatile AppDatabase INSTANCE;
@@ -19,7 +19,6 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "comandero_db")
-                            // ESTA LÍNEA ES LA MAGIA QUE EVITA EL ERROR:
                             .fallbackToDestructiveMigration()
                             .build();
                 }

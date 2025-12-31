@@ -24,15 +24,25 @@
             android:id="@+id/recyclerDetalle"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"/>
+            android:layout_weight="1"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnMandarCocina"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#FF9800"
+            android:padding="12dp"
+            android:text="Mandar a Cocina" />
 
         <Button
             android:id="@+id/btnIrACaja"
             android:text="Ver Recibo y Cobrar"
             android:backgroundTint="#4CAF50"
+            android:padding="12dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"/>
+            android:layout_height="wrap_content"/>
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -40,10 +50,23 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="80dp"
+        android:layout_marginBottom="130dp"
         android:layout_marginEnd="16dp"
         android:contentDescription="Añadir producto"
         android:src="@android:drawable/ic_menu_search"
         app:backgroundTint="#FF9800"
         app:tint="#FFFFFF"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabSimularCocina"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginBottom="130dp"
+        android:layout_marginStart="16dp"
+        android:contentDescription="Simular Ticket Cocina"
+        android:src="@android:drawable/ic_menu_view"
+        app:backgroundTint="#2196F3"
+        app:tint="#FFFFFF"/>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
